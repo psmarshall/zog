@@ -1,1 +1,1 @@
-readchar putchar
+10 65 putchar putchar

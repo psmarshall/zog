@@ -29,3 +29,6 @@
 
 # Binary
 zog
+
+# Gozz files (generate them from .human files)
+programs/*.gozz
