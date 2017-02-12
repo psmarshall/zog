@@ -1,0 +1,4 @@
+function: f1()
+  add endFunction
+
+7 9 f1() Gozz$

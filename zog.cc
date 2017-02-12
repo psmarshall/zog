@@ -9,7 +9,16 @@
 
 using Stack = std::stack<uint64_t>;
 
-int interpret(std::vector<std::string> program, Stack stack) {
+std::vector<std::string> f1;
+
+uint64_t pop(Stack& stack) {
+  if (stack.empty()) return 2;
+  uint64_t top = stack.top();
+  stack.pop();
+  return top;
+}
+
+int interpret(std::vector<std::string> program, Stack& stack) {
   for (int i = 0; i < program.size(); i++) {
     // std::cout << program[i] << "\n";
     // Convert string to int.
@@ -25,11 +34,32 @@ int interpret(std::vector<std::string> program, Stack stack) {
       std::cin >> in;
       stack.push(in);
     } else if (program[i] == "Gozz@") {
-      char out = stack.top();
-      stack.pop();
+      char out = pop(stack);
       std::cout << out;
     } else if (valid_int) {
       stack.push(int_val);
+    } else if (program[i] == "Gozz$") {
+      uint64_t out = pop(stack);
+      std::cout << std::to_string(out);
+    } else if (program[i] == "gozz") {
+      uint64_t left = pop(stack);
+      uint64_t right = pop(stack);
+      stack.push(left + right);
+    } else if (program[i] == "Gozz:") {
+      f1.clear();
+      // Function definition.
+      // Get the function name.
+      if (program[++i] == "Gozz") {
+        std::string instr;
+        while ((instr = program[++i]) != "Gozz!") {
+          f1.push_back(instr);
+        }
+      } else {
+        std::cerr << "Not implemented";
+      }
+    } else if (program[i] == "Gozz") {
+      // Function call.
+      interpret(f1, stack);
     } else {
       std::cerr << "Dunno what that is :(\n";
     }
