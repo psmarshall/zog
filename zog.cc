@@ -143,10 +143,20 @@ int interpret(const std::vector<Token>& program, Stack& stack) {
       case TokenType::EQUALS: {
         uint64_t left = pop(stack);
         uint64_t right = pop(stack);
-        if (left == right) {
-          stack.push(2); // Gozzy!
+
+        // Equals-If folding optimisation.
+        if (i + 1 < program.size() && program[i + 1].type == TokenType::IF) {
+          if (left == right) {
+            i++;
+          } else {
+            i += 2;
+          }
         } else {
-          stack.push(1); // Non-Gozzy :(
+          if (left == right) {
+            stack.push(2); // Gozzy!
+          } else {
+            stack.push(1); // Non-Gozzy :(
+          }
         }
         break;
       }
