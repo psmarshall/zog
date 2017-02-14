@@ -1,0 +1,6 @@
+function: f1()
+  dupe 2 equals if return
+  dupe 1 equals if return
+  -1 add dupe f1() swap -1 add f1() add endFunction
+
+10 readint f1() putint putchar
