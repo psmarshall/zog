@@ -19,6 +19,7 @@ enum class TokenType {
 };
 
 struct Token {
+  Token(TokenType _type, uint64_t _payload) : type(_type), payload(_payload) {}
   TokenType type;
   uint64_t payload;
 };
@@ -78,7 +79,6 @@ int interpret(const std::vector<Token>& program, Stack& stack) {
         f1.clear();
         // Get the function name.
         if (program[++i].type == TokenType::F1) {
-          Token instr;
           for (i++; program[i].type != TokenType::ENDFUNCTION; i++) {
             f1.push_back(program[i]);
           }
@@ -221,7 +221,7 @@ void parse(std::vector<std::string> program, std::vector<Token>& tokens) {
     } else {
       try {
         uint64_t int_val = std::stoll(str);
-        tokens.push_back({TokenType::INTEGER, int_val});
+        tokens.emplace_back(TokenType::INTEGER, int_val);
       } catch (std::invalid_argument e) {
         std::cerr << "Dunno what that is :(\n";
       }
