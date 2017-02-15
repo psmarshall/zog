@@ -182,7 +182,7 @@ int interpret(const std::vector<Token>& program, Stack& stack) {
 }
 
 void parse(std::vector<std::string> program, std::vector<Token>& tokens) {
-  std::map<std::string, Token> token_map {
+  std::map<std::string, Token> token_map = {
     {"Gozz@", {TokenType::PUTCHAR, 0}},
     {"Gozz$", {TokenType::PUTINT, 0}},
     {"@Gozz", {TokenType::READCHAR, 0}},
