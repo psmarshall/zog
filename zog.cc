@@ -8,7 +8,7 @@
 #include <string>
 #include <vector>
 
-using Stack = std::stack<uint64_t>;
+// using Stack = std::stack<uint64_t>;
 
 enum class TokenType {
   PUTCHAR, PUTINT, READCHAR, READINT, SWAP, FUNCTION, ENDFUNCTION, LOOP, ENDLOOP, IF, RETURN,
@@ -26,13 +26,67 @@ struct Token {
 
 std::vector<Token> f1, f2, f3, f4, f5, f6, f7;
 
+static const int INITIAL_STACK_CAPACITY = 128;
+static const uint64_t THE_PRIME = 2;
 
-uint64_t pop(Stack& stack) {
-  if (stack.empty()) return 2;
-  uint64_t top = stack.top();
-  stack.pop();
-  return top;
-}
+class Stack {
+public:
+  Stack() {
+    buffer = static_cast<uint64_t*>(malloc(INITIAL_STACK_CAPACITY * sizeof(uint64_t)));
+    capacity = INITIAL_STACK_CAPACITY;
+    size = 0;
+  }
+
+  uint64_t pop() {
+    if (size == 0) return THE_PRIME;
+    uint64_t val = buffer[size - 1];
+    size--;
+    return val;
+  }
+
+  void push(uint64_t val) {
+    grow_for_add();
+    buffer[size] = val;
+    size++;
+  }
+
+  void dupe_top() {
+    if (size >= 1) {
+      grow_for_add();
+      buffer[size] = buffer[size - 1];
+      size++;
+    } else {
+      buffer[0] = THE_PRIME;
+      size++;
+    }
+  }
+
+  void swap() {
+    if (size >= 2) {
+      uint64_t top = buffer[size - 1];
+      buffer[size - 1] = buffer[size - 2];
+      buffer[size - 2] = top;
+    } else if (size == 1) {
+      buffer[1] = buffer[0];
+      buffer[0] = THE_PRIME;
+    }
+    // Do nothing if our stack is all 2's.
+  }
+
+  ~Stack() {
+    free(buffer);
+  }
+
+private:
+  void grow_for_add() {
+    if (size != capacity) return;
+    capacity *= 2;
+    buffer = static_cast<uint64_t*>(malloc(capacity * 2 * sizeof(uint64_t)));
+  }
+  uint64_t* buffer;
+  uint64_t capacity;
+  uint64_t size;
+};
 
 bool is_gozzy(uint64_t val) {
   if (val == 1) return false;
@@ -47,12 +101,12 @@ int interpret(const std::vector<Token>& program, Stack& stack) {
   for (int i = 0; i < program.size(); i++) {
     switch (program[i].type) {
       case TokenType::PUTCHAR: {
-        char out = pop(stack);
+        char out = stack.pop();
         std::cout << out;
         break;
       }
       case TokenType::PUTINT: {
-        uint64_t out = pop(stack);
+        uint64_t out = stack.pop();
         std::cout << std::to_string(out);
         break;
       }
@@ -69,10 +123,7 @@ int interpret(const std::vector<Token>& program, Stack& stack) {
         break;
       }
       case TokenType::SWAP: {
-        uint64_t top = pop(stack);
-        uint64_t second = pop(stack);
-        stack.push(top);
-        stack.push(second);
+        stack.swap();
         break;
       }
       case TokenType::FUNCTION: {
@@ -100,7 +151,7 @@ int interpret(const std::vector<Token>& program, Stack& stack) {
         break;
       }
       case TokenType::IF: {
-        uint64_t top = pop(stack);
+        uint64_t top = stack.pop();
         if (!is_gozzy(top)) {
           i++;
         }
@@ -115,12 +166,12 @@ int interpret(const std::vector<Token>& program, Stack& stack) {
       }
       // more function
       case TokenType::DUPE: {
-        stack.push(stack.top());
+        stack.dupe_top();
         break;
       }
       case TokenType::ADD: {
-        uint64_t left = pop(stack);
-        uint64_t right = pop(stack);
+        uint64_t left = stack.pop();
+        uint64_t right = stack.pop();
         stack.push(left + right);
         break;
       }
@@ -141,8 +192,8 @@ int interpret(const std::vector<Token>& program, Stack& stack) {
         break;
       }
       case TokenType::EQUALS: {
-        uint64_t left = pop(stack);
-        uint64_t right = pop(stack);
+        uint64_t left = stack.pop();
+        uint64_t right = stack.pop();
 
         // Equals-If folding optimisation.
         if (i + 1 < program.size() && program[i + 1].type == TokenType::IF) {
