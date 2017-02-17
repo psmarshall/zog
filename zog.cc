@@ -2,7 +2,7 @@
 #include <cstdlib>
 #include <fstream>
 #include <iostream>
-#include <map>
+#include <unordered_map>
 #include <stack>
 #include <stdint.h>
 #include <string>
@@ -15,7 +15,10 @@ enum class TokenType {
   F1, F2, F3, F4, F5, F6, F7,
   DUPE,
   ADD, SUB, DIV, MULT, NOT, EQUALS, AND, OR,
-  INTEGER
+  INTEGER,
+
+  // Combined operations.
+  EQUALS_IF
 };
 
 struct Token {
@@ -81,7 +84,7 @@ private:
   void grow_for_add() {
     if (size != capacity) return;
     capacity *= 2;
-    buffer = static_cast<uint64_t*>(malloc(capacity * 2 * sizeof(uint64_t)));
+    buffer = static_cast<uint64_t*>(realloc(buffer, capacity * sizeof(uint64_t)));
   }
   uint64_t* buffer;
   uint64_t capacity;
@@ -194,20 +197,10 @@ int interpret(const std::vector<Token>& program, Stack& stack) {
       case TokenType::EQUALS: {
         uint64_t left = stack.pop();
         uint64_t right = stack.pop();
-
-        // Equals-If folding optimisation.
-        if (i + 1 < program.size() && program[i + 1].type == TokenType::IF) {
-          if (left == right) {
-            i++;
-          } else {
-            i += 2;
-          }
+        if (left == right) {
+          stack.push(2); // Gozzy!
         } else {
-          if (left == right) {
-            stack.push(2); // Gozzy!
-          } else {
-            stack.push(1); // Non-Gozzy :(
-          }
+          stack.push(1); // Non-Gozzy :(
         }
         break;
       }
@@ -223,8 +216,14 @@ int interpret(const std::vector<Token>& program, Stack& stack) {
         stack.push(program[i].payload);
         break;
       }
+      case TokenType::EQUALS_IF: {
+        uint64_t left = stack.pop();
+        uint64_t right = stack.pop();
+        if (left != right) i++;
+        break;
+      }
       default: {
-        std::cerr << "Missing token type";
+        std::cerr << "Missing token type\n";
         break;
       }
     }
@@ -232,8 +231,21 @@ int interpret(const std::vector<Token>& program, Stack& stack) {
   return 0;
 }
 
+void reduce(const std::vector<Token>& tokens, std::vector<Token>& tokens_out) {
+  for (int i = 0; i < tokens.size(); i++) {
+    if (tokens[i].type == TokenType::EQUALS) {
+      if (i + 1 < tokens.size() && tokens[i + 1].type == TokenType::IF) {
+        tokens_out.emplace_back(TokenType::EQUALS_IF, 0);
+        i++;
+        continue;
+      }
+    }
+    tokens_out.push_back(tokens[i]);
+  }
+}
+
 void parse(std::vector<std::string> program, std::vector<Token>& tokens) {
-  std::map<std::string, Token> token_map = {
+  std::unordered_map<std::string, Token> token_map = {
     {"Gozz@", {TokenType::PUTCHAR, 0}},
     {"Gozz$", {TokenType::PUTINT, 0}},
     {"@Gozz", {TokenType::READCHAR, 0}},
@@ -265,7 +277,7 @@ void parse(std::vector<std::string> program, std::vector<Token>& tokens) {
     {"gOZZ", {TokenType::OR, 0}}
   };
 
-  for (auto str : program) {
+  for (const auto& str : program) {
     auto it = token_map.find(str);
     if (it != token_map.end()) {
       tokens.push_back(it->second);
@@ -289,7 +301,8 @@ int main(int argc, char **argv) {
     program.push_back(input);
   }
   Stack stack;
-  std::vector<Token> tokens;
+  std::vector<Token> tokens, tokens_out;
   parse(program, tokens);
-  return interpret(tokens, stack);
+  reduce(tokens, tokens_out);
+  return interpret(tokens_out, stack);
 }
