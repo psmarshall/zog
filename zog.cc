@@ -29,6 +29,16 @@ struct Token {
 
 std::vector<Token> f1, f2, f3, f4, f5, f6, f7;
 
+std::unordered_map<TokenType, std::vector<Token>> function_table = {
+  {TokenType::F1, f1},
+  {TokenType::F2, f2},
+  {TokenType::F3, f3},
+  {TokenType::F4, f4},
+  {TokenType::F5, f5},
+  {TokenType::F6, f6},
+  {TokenType::F7, f7},
+};
+
 static const int INITIAL_STACK_CAPACITY = 128;
 static const uint64_t THE_PRIME = 2;
 
@@ -53,12 +63,25 @@ public:
     size++;
   }
 
+  void add() {
+    if (size >= 2) {
+      buffer[size - 2] = buffer[size - 2] + buffer[size - 1];
+      size--;
+    } else if (size == 1) {
+      buffer[0] += THE_PRIME;
+    } else {
+      buffer[0] = 2 * THE_PRIME;
+      size = 1;
+    }
+  }
+
   void dupe_top() {
     if (size >= 1) {
       grow_for_add();
       buffer[size] = buffer[size - 1];
       size++;
     } else {
+      // TODO - not needed?
       buffer[0] = THE_PRIME;
       size++;
     }
@@ -132,7 +155,9 @@ int interpret(const std::vector<Token>& program, Stack& stack) {
       case TokenType::FUNCTION: {
         f1.clear();
         // Get the function name.
-        if (program[++i].type == TokenType::F1) {
+        TokenType type = program[++i].type;
+        auto it = function_table.find(type);
+        if (it != function_table.end()) {
           for (i++; program[i].type != TokenType::ENDFUNCTION; i++) {
             f1.push_back(program[i]);
           }
@@ -173,9 +198,7 @@ int interpret(const std::vector<Token>& program, Stack& stack) {
         break;
       }
       case TokenType::ADD: {
-        uint64_t left = stack.pop();
-        uint64_t right = stack.pop();
-        stack.push(left + right);
+        stack.add();
         break;
       }
       case TokenType::SUB: {
@@ -229,19 +252,6 @@ int interpret(const std::vector<Token>& program, Stack& stack) {
     }
   }
   return 0;
-}
-
-void reduce(const std::vector<Token>& tokens, std::vector<Token>& tokens_out) {
-  for (int i = 0; i < tokens.size(); i++) {
-    if (tokens[i].type == TokenType::EQUALS) {
-      if (i + 1 < tokens.size() && tokens[i + 1].type == TokenType::IF) {
-        tokens_out.emplace_back(TokenType::EQUALS_IF, 0);
-        i++;
-        continue;
-      }
-    }
-    tokens_out.push_back(tokens[i]);
-  }
 }
 
 void parse(std::vector<std::string> program, std::vector<Token>& tokens) {
@@ -301,8 +311,7 @@ int main(int argc, char **argv) {
     program.push_back(input);
   }
   Stack stack;
-  std::vector<Token> tokens, tokens_out;
+  std::vector<Token> tokens;
   parse(program, tokens);
-  reduce(tokens, tokens_out);
-  return interpret(tokens_out, stack);
+  return interpret(tokens, stack);
 }
