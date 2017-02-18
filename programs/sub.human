@@ -1,0 +1,19 @@
+sub putint
+10 putchar
+
+10 sub putint
+10 putchar
+
+2 1 sub putint
+10 putchar
+
+1 2 3 4 sub sub sub putint
+10 putchar
+
+0 0 sub putint
+10 putchar
+
+-10 -10 sub putint
+10 putchar
+
+sub sub sub putint

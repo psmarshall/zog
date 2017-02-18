@@ -8,8 +8,6 @@
 #include <string>
 #include <vector>
 
-// using Stack = std::stack<uint64_t>;
-
 enum class TokenType {
   PUTCHAR, PUTINT, READCHAR, READINT, SWAP, FUNCTION, ENDFUNCTION, LOOP, ENDLOOP, IF, RETURN,
   F1, F2, F3, F4, F5, F6, F7,
@@ -22,9 +20,9 @@ enum class TokenType {
 };
 
 struct Token {
-  Token(TokenType _type, uint64_t _payload) : type(_type), payload(_payload) {}
+  Token(TokenType _type, int64_t _payload) : type(_type), payload(_payload) {}
   TokenType type;
-  uint64_t payload;
+  int64_t payload;
 };
 
 std::vector<Token> f1, f2, f3, f4, f5, f6, f7;
@@ -40,24 +38,24 @@ std::unordered_map<TokenType, std::vector<Token>> function_table = {
 };
 
 static const int INITIAL_STACK_CAPACITY = 128;
-static const uint64_t THE_PRIME = 2;
+static const int64_t THE_PRIME = 2;
 
 class Stack {
 public:
   Stack() {
-    buffer = static_cast<uint64_t*>(malloc(INITIAL_STACK_CAPACITY * sizeof(uint64_t)));
+    buffer = static_cast<int64_t*>(malloc(INITIAL_STACK_CAPACITY * sizeof(int64_t)));
     capacity = INITIAL_STACK_CAPACITY;
     size = 0;
   }
 
-  uint64_t pop() {
+  int64_t pop() {
     if (size == 0) return THE_PRIME;
-    uint64_t val = buffer[size - 1];
+    int64_t val = buffer[size - 1];
     size--;
     return val;
   }
 
-  void push(uint64_t val) {
+  void push(int64_t val) {
     grow_for_add();
     buffer[size] = val;
     size++;
@@ -71,6 +69,18 @@ public:
       buffer[0] += THE_PRIME;
     } else {
       buffer[0] = 2 * THE_PRIME;
+      size = 1;
+    }
+  }
+
+  void sub() {
+    if (size >= 2) {
+      buffer[size - 2] = buffer[size - 2] - buffer[size - 1];
+      size--;
+    } else if (size == 1) {
+      buffer[0] -= THE_PRIME;
+    } else {
+      buffer[0] = 0;
       size = 1;
     }
   }
@@ -89,7 +99,7 @@ public:
 
   void swap() {
     if (size >= 2) {
-      uint64_t top = buffer[size - 1];
+      int64_t top = buffer[size - 1];
       buffer[size - 1] = buffer[size - 2];
       buffer[size - 2] = top;
     } else if (size == 1) {
@@ -107,15 +117,15 @@ private:
   void grow_for_add() {
     if (size != capacity) return;
     capacity *= 2;
-    buffer = static_cast<uint64_t*>(realloc(buffer, capacity * sizeof(uint64_t)));
+    buffer = static_cast<int64_t*>(realloc(buffer, capacity * sizeof(int64_t)));
   }
-  uint64_t* buffer;
+  int64_t* buffer;
   uint64_t capacity;
   uint64_t size;
 };
 
-bool is_gozzy(uint64_t val) {
-  if (val == 1) return false;
+bool is_gozzy(int64_t val) {
+  if (val <= 1) return false;
   if (val == 2) return true;
   for (uint64_t i = 2; i < (uint64_t)sqrt(val); i++) {
     if (val % i == 0) return false;
@@ -132,7 +142,7 @@ int interpret(const std::vector<Token>& program, Stack& stack) {
         break;
       }
       case TokenType::PUTINT: {
-        uint64_t out = stack.pop();
+        int64_t out = stack.pop();
         std::cout << std::to_string(out);
         break;
       }
@@ -143,7 +153,7 @@ int interpret(const std::vector<Token>& program, Stack& stack) {
         break;
       }
       case TokenType::READINT: {
-        uint64_t in;
+        int64_t in;
         std::cin >> in;
         stack.push(in);
         break;
@@ -179,7 +189,7 @@ int interpret(const std::vector<Token>& program, Stack& stack) {
         break;
       }
       case TokenType::IF: {
-        uint64_t top = stack.pop();
+        int64_t top = stack.pop();
         if (!is_gozzy(top)) {
           i++;
         }
@@ -202,7 +212,7 @@ int interpret(const std::vector<Token>& program, Stack& stack) {
         break;
       }
       case TokenType::SUB: {
-        std::cerr << "Not implemented";
+        stack.sub();
         break;
       }
       case TokenType::DIV: {
@@ -218,8 +228,8 @@ int interpret(const std::vector<Token>& program, Stack& stack) {
         break;
       }
       case TokenType::EQUALS: {
-        uint64_t left = stack.pop();
-        uint64_t right = stack.pop();
+        int64_t left = stack.pop();
+        int64_t right = stack.pop();
         if (left == right) {
           stack.push(2); // Gozzy!
         } else {
@@ -240,8 +250,8 @@ int interpret(const std::vector<Token>& program, Stack& stack) {
         break;
       }
       case TokenType::EQUALS_IF: {
-        uint64_t left = stack.pop();
-        uint64_t right = stack.pop();
+        int64_t left = stack.pop();
+        int64_t right = stack.pop();
         if (left != right) i++;
         break;
       }
@@ -293,7 +303,7 @@ void parse(std::vector<std::string> program, std::vector<Token>& tokens) {
       tokens.push_back(it->second);
     } else {
       try {
-        uint64_t int_val = std::stoll(str);
+        int64_t int_val = std::stoll(str);
         tokens.emplace_back(TokenType::INTEGER, int_val);
       } catch (std::invalid_argument e) {
         std::cerr << "Dunno what that is :(\n";
